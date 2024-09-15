@@ -100,3 +100,14 @@ export async function getCurrentUser() {
         console.log('Error fetching current user:', error);
     }
 }
+
+export async function signOutAccount() {
+    try {
+        const session = await account.deleteSession("current")
+        return session
+    } catch (error) {
+        console.log(error);
+        
+    }
+    
+}
