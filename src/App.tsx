@@ -20,6 +20,17 @@ const App = () => {
        {/* Private Routes */}
        <Route element={<RootLayout/>}>
        <Route index element={<Home/>}/>
+       <Route path='/explore' element= {<Explore/>} />
+       <Route path='/saved' element= {<Saved/>} />
+       <Route path='/all-users' element= {<AllUsers/>} />
+       <Route path='/create-post' element= {<CreeatePost/>} />
+       <Route path='/update-post/:id' element= {<EditPost/>} />
+       <Route path='/posts/:id' element= {<PostsDetails/>} />
+       <Route path='/profile/:id/*' element= {<Profile/>} />
+       <Route path='/update-profile/:id' element= {<UpddateProfile/>} />
+
+
+
        </Route>
         </Routes>
 
