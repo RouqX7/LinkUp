@@ -219,7 +219,7 @@ export async function deleteFile(fileId: string) {
     }
   }
 
-  export async function LikedPost(postId:string, likesArray:string[]){
+  export async function LikePost(postId:string, likesArray:string[]){
     try {
       const updatedPost = await databases.updateDocument(
       appWriteConfig.databaseId,
@@ -267,7 +267,7 @@ export async function deleteFile(fileId: string) {
     ) 
     if(!statusCode) throw Error 
 
-      return {status: }
+      return {status: 'ok'}
     } catch (error) {
       console.log(error)
       
