@@ -218,3 +218,58 @@ export async function deleteFile(fileId: string) {
       console.log(error);
     }
   }
+
+  export async function LikedPost(postId:string, likesArray:string[]){
+    try {
+      const updatedPost = await databases.updateDocument(
+      appWriteConfig.databaseId,
+      appWriteConfig.postCollectionId,
+      postId,
+      {
+        likes:likesArray
+      }
+      
+    ) 
+    if(!updatedPost) throw Error 
+      return updatedPost
+    } catch (error) {
+      console.log(error)
+      
+    }
+  }
+
+  export async function savePost(postId:string, userId:string){
+    try {
+      const updatedPost = await databases.createDocument(
+      appWriteConfig.databaseId,
+      appWriteConfig.savesCollectionId,
+      ID.unique(),
+      {
+        user:userId,
+        post:postId,
+      }
+      
+    ) 
+    if(!updatedPost) throw Error 
+      return updatedPost
+    } catch (error) {
+      console.log(error)
+      
+    }
+  }
+
+  export async function deleteSavedPost(savedRecordId:string){
+    try {
+      const statusCode = await databases.deleteDocument(
+      appWriteConfig.databaseId,
+      appWriteConfig.savesCollectionId,
+      savedRecordId,
+    ) 
+    if(!statusCode) throw Error 
+
+      return {status: }
+    } catch (error) {
+      console.log(error)
+      
+    }
+  }
