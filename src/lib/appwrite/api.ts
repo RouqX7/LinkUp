@@ -219,7 +219,7 @@ export async function deleteFile(fileId: string) {
     }
   }
 
-  export async function LikePost(postId:string, likesArray:string[]){
+  export async function likePost(postId:string, likesArray:string[]){
     try {
       const updatedPost = await databases.updateDocument(
       appWriteConfig.databaseId,
