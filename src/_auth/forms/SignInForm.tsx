@@ -4,21 +4,29 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Form,FormControl,FormDescription,FormField,FormItem,FormLabel,FormMessage,} from "@/components/ui/form";
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { SignInValidation } from "@/lib/validation";
 import { z } from "zod";
 import Loader from "@/components/ui/shared/Loader";
-import { useSignInAccount } from "@/lib/react-query/queriesAndMutations";
+import {
+  useSignInAccount,
+  useUpdateUserLocation,
+} from "@/lib/react-query/queriesAndMutations"; 
 import { useUserContext } from "@/context/AuthContext";
 
 const SignInForm = () => {
   const { toast } = useToast();
   const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
-  const isLoading = false;
   const navigate = useNavigate();
-
   const { mutateAsync: signInAccount } = useSignInAccount();
+  const { mutateAsync: updateUserLocation } = useUpdateUserLocation();
 
   const form = useForm<z.infer<typeof SignInValidation>>({
     resolver: zodResolver(SignInValidation),
@@ -29,32 +37,60 @@ const SignInForm = () => {
   });
 
   async function onSubmit(values: z.infer<typeof SignInValidation>) {
-    const session = await signInAccount({
-      email: values.email,
-      password: values.password,
-    });
+    try {
+      const session = await signInAccount({
+        email: values.email,
+        password: values.password,
+      });
 
-    if (!session) {
-      return toast({ title: "Sign in failed. Please try again" });
-    }
+      const accountId = session?.$id; 
 
-    const isLoggedIn = await checkAuthUser();
-    console.log(isLoggedIn);
+      if (!session || !accountId) {
+        return toast({ title: "Sign in failed. Please try again" });
+      }
 
-    if (isLoggedIn) {
-      form.reset();
+      // Capture user's location
+      let latitude: number | undefined;
+      let longitude: number | undefined;
 
-      navigate("/");
-    } else {
-      return toast({ title: "Sign In failed. Please try again." });
+      const position = await new Promise<GeolocationPosition>(
+        (resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        }
+      ).catch((error) => {
+        console.error("Geolocation failed:", error);
+      });
+
+      if (position) {
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+
+        await updateUserLocation({
+          accountId,
+          latitude,
+          longitude,
+        });
+      }
+
+      const isLoggedIn = await checkAuthUser();
+      if (isLoggedIn) {
+        form.reset();
+        navigate("/");
+      } else {
+        return toast({ title: "Sign In failed. Please try again." });
+      }
+    } catch (error) {
+      console.error("Error during sign-in:", error);
+      toast({
+        title: "Error during sign-in. Please try again.",
+      });
     }
   }
 
-  // Form layout and input fields
   return (
     <Form {...form}>
       <div className="sm:w-420 flex-center flex-col">
-        <img src="/assets/images/logo.svg " alt="logo" />
+        <img src="/assets/images/logo.png" alt="logo" />
 
         <h2 className="h3-bold md:h2-bold pt-5 sm:pt-12">
           Log in to your account
@@ -117,4 +153,4 @@ const SignInForm = () => {
   );
 };
 
-export default SignInForm; // Exporting the correct component name
+export default SignInForm;

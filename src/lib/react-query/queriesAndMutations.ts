@@ -21,6 +21,7 @@ import {
   signInToAccount,
   signOutAccount,
   updatePost,
+  updateUserLocation,
 } from "../appwrite/api";
 import { INewPost, INewUser, IUpdatePost } from "@/types";
 import { QUERY_KEYS } from "./queryKeys";
@@ -190,5 +191,19 @@ export const useSearchPosts = (searchTerm: string) => {
     queryKey: [QUERY_KEYS.SEARCH_POSTS,searchTerm],
     queryFn: () => searchPosts(searchTerm),
     enabled: !!searchTerm,
+  });
+};
+
+export const useUpdateUserLocation = () => {
+  return useMutation({
+    mutationFn: ({
+      accountId, 
+      latitude,
+      longitude,
+    }: {
+      accountId: string;  
+      latitude?: number;
+      longitude?: number;
+    }) => updateUserLocation({ accountId, latitude, longitude }),  
   });
 };

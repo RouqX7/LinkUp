@@ -47,6 +47,8 @@ export type INavLink = {
     email: string;
     imageUrl: string;
     bio: string;
+    latitude?: number; 
+    longitude?: number; 
   };
   
   export type INewUser = {
@@ -54,4 +56,7 @@ export type INavLink = {
     email: string;
     username: string;
     password: string;
+    latitude?: number;   
+    longitude?: number;  
   };
+  

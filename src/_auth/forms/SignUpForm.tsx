@@ -1,13 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Link,useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,14 +20,12 @@ import { useCreateUserAccount, useSignInAccount } from "@/lib/react-query/querie
 import { useUserContext } from "@/context/AuthContext";
 
 const SignUpForm = () => {
-  const { toast } = useToast()
-  const {checkAuthUser,isLoading: isUserLoading} = useUserContext();
-  const isLoading = false;
+  const { toast } = useToast();
+  const { checkAuthUser } = useUserContext();
   const navigate = useNavigate();
-  
-  const {mutateAsync: createUserAccount, isPending: isCreatingAccount} = useCreateUserAccount();
 
-  const{mutateAsync:signInAccount,isPending:isSigningIn} = useSignInAccount();
+  const { mutateAsync: createUserAccount, isPending: isCreatingAccount } = useCreateUserAccount();
+  const { mutateAsync: signInAccount, isPending: isSigningIn } = useSignInAccount();
 
   const form = useForm<z.infer<typeof SignUpValidation>>({
     resolver: zodResolver(SignUpValidation),
@@ -40,38 +37,60 @@ const SignUpForm = () => {
     },
   });
 
+
   async function onSubmit(user: z.infer<typeof SignUpValidation>) {
-    const newUser = await createUserAccount(user);
-    if(!newUser) {
-      return  toast({
-        title: "Sign Up failed.Please try again",
-     
-      })
+    try {
+      let latitude: number | undefined;
+      let longitude: number | undefined;
+  
+      // Step 1: Get user location
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject);
+      });
+  
+      latitude = position.coords.latitude;
+      longitude = position.coords.longitude;
+  
+      // Step 2: Create the user account with location info
+      const newUser = await createUserAccount({
+        ...user,  
+        latitude,  
+        longitude, 
+      });
+  
+      if (!newUser) {
+        return toast({
+          title: "Sign Up failed. Please try again.",
+        });
+      }
+  
+      // Step 3: Sign the user in
+      const session = await signInAccount({
+        email: user.email,
+        password: user.password,
+      });
+  
+      if (!session) {
+        return toast({ title: 'Sign in failed. Please try again.' });
+      }
+  
+      // Step 4: Check if the user is authenticated
+      const isLoggedIn = await checkAuthUser();
+  
+      if (isLoggedIn) {
+        form.reset();
+        navigate('/');
+      } else {
+        return toast({ title: 'Sign up failed. Please try again.' });
+      }
+    } catch (error) {
+      console.error("Error during sign-up:", error);
+      toast({
+        title: "Error during sign-up. Please try again.",
+      });
     }
-
-    const session = await signInAccount({
-      email: user.email,
-      password:user.password,
-    })
-
-    if(!session ){
-      return toast({title:'Sign up failed. Please try again'})
-    }
-
-    const isLoggedIn = await checkAuthUser();
-
-    if(isLoggedIn){
-      form.reset(); 
-
-      navigate('/')
-    } else {
-      return toast({title:'Sign up failed. Please try again.'})
-    }
-
-    console.log(newUser);
   }
 
-  // Form layout and input fields
   return (
     <Form {...form}>
       <div className="sm:w-420 flex-center flex-col">
@@ -139,7 +158,7 @@ const SignUpForm = () => {
             )}
           />
           <Button type="submit" className="shad-button_primary">
-            {isCreatingAccount ? (
+            {isCreatingAccount || isSigningIn ? (
               <div className="flex-center gap-2">
                 <Loader /> Loading...
               </div>
@@ -163,4 +182,4 @@ const SignUpForm = () => {
   );
 };
 
-export default SignUpForm; 
+export default SignUpForm;

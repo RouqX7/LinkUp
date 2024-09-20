@@ -11,24 +11,28 @@ export async function createUserAccount(user: INewUser) {
       user.name
     );
 
-    if (!newAccount) throw Error;
+    if (!newAccount) throw new Error("Account creation failed");
 
     const avatarUrl = avatars.getInitials(user.name);
 
+    // Include latitude and longitude when saving to DB
     const newUser = await saveUserToDB({
       accountId: newAccount.$id,
       name: newAccount.name,
       email: newAccount.email,
       username: user.username,
       imageUrl: avatarUrl,
+      latitude: user.latitude,   
+      longitude: user.longitude, 
     });
 
     return newUser;
   } catch (error) {
-    console.log(error);
+    console.log("Error creating user account:", error);
     return error;
   }
 }
+
 
 export async function saveUserToDB(user: {
   accountId: string;
@@ -36,6 +40,8 @@ export async function saveUserToDB(user: {
   name: string;
   imageUrl: URL;
   username?: string;
+  latitude?: number;  
+  longitude?: number; 
 }) {
   try {
     const newUser = await databases.createDocument(
@@ -44,13 +50,14 @@ export async function saveUserToDB(user: {
       ID.unique(),
       user
     );
-    console.log("User saved to DB:"); // Add logging here
+    console.log("User saved to DB:", newUser); // Add logging here
     return newUser;
   } catch (error) {
     console.log("Error saving user to database:", error); // Log the error
     throw new Error("Failed to save user to the database");
   }
 }
+
 
 export async function signInToAccount(user: {
   email: string;
@@ -385,5 +392,55 @@ export async function searchPosts(searchTerm:string) {
    return posts;
   } catch (error) {
     console.log(error);
+  }
+}
+export async function updateUserLocation({
+  accountId,
+  latitude,
+  longitude,
+}: {
+  accountId: string;
+  latitude?: number;
+  longitude?: number;
+}) {
+  try {
+    const userDocument = await databases.listDocuments(
+      appWriteConfig.databaseId,
+      appWriteConfig.userCollectionId,
+      [Query.equal("accountId", accountId)]
+    );
+
+    if (userDocument.documents.length === 0) {
+      throw new Error("User not found");
+    }
+
+    const userDocId = userDocument.documents[0].$id;
+
+    const updatedUser = await databases.updateDocument(
+      appWriteConfig.databaseId,
+      appWriteConfig.userCollectionId,
+      userDocId,
+      { latitude, longitude }
+    );
+
+    return updatedUser;
+  } catch (error) {
+    console.error("Error updating user location:", error);
+  }
+}
+
+
+export async function getUserLocation(accountId: string) {
+  try {
+    const user = await databases.getDocument(
+      appWriteConfig.databaseId,
+      appWriteConfig.userCollectionId,
+      accountId
+    );
+    const { latitude, longitude } = user;
+    return { latitude, longitude };
+  } catch (error) {
+    console.log("Error fetching user location:", error);
+    return null;
   }
 }
