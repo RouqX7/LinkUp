@@ -14,6 +14,7 @@ import {
   getCurrentUser,
   getInfinitePosts,
   getPostById,
+  getPostsByLocation,
   getRecentPosts,
   likePost,
   savePost,
@@ -173,18 +174,7 @@ export const useDeletePost = () => {
   });
 };
 
-export const useGetPosts = () => {
-  return useInfiniteQuery({
-    queryKey: [QUERY_KEYS.GET_INFINITE_POSTS],
-    queryFn: getInfinitePosts,
-    getNextPageParam: (lastPage) => {
-      if (lastPage && lastPage.documents.length == 0) return null;
 
-      const lastId = lastPage?.documents[lastPage?.documents.length - 1].$id;
-      return lastId;
-    },
-  });
-};
 
 export const useSearchPosts = (searchTerm: string) => {
   return useQuery({
@@ -205,5 +195,29 @@ export const useUpdateUserLocation = () => {
       latitude?: number;
       longitude?: number;
     }) => updateUserLocation({ accountId, latitude, longitude }),  
+  });
+};
+
+export const useGetPosts = (
+  latitude: number,
+  longitude: number,
+  distanceFilter: number
+) => {
+  return useInfiniteQuery({
+    queryKey: [QUERY_KEYS.GET_POSTS, latitude, longitude, distanceFilter],
+    queryFn: ({ pageParam }) =>
+      getPostsByLocation({
+        latitude,
+        longitude,
+        distanceFilter,
+        pageParam: pageParam ?? undefined, // Ensure pageParam is undefined if null
+      }),
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || lastPage.documents.length === 0) return undefined; // Ensure undefined if no more pages
+      const lastId = lastPage.documents[lastPage.documents.length - 1].$id;
+      return lastId ?? undefined; // Ensure undefined if no lastId
+    },
+    enabled: !!latitude && !!longitude,
+    initialPageParam: undefined, // Ensuring the initial page param is undefined
   });
 };

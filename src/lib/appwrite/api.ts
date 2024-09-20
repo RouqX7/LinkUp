@@ -1,6 +1,7 @@
 import { INewPost, INewUser, IUpdatePost } from "@/types";
 import { ID, Query } from "appwrite";
 import { account, appWriteConfig, avatars, databases, storage } from "./config";
+import { haversine } from "../utils";
 
 export async function createUserAccount(user: INewUser) {
   try {
@@ -442,5 +443,49 @@ export async function getUserLocation(accountId: string) {
   } catch (error) {
     console.log("Error fetching user location:", error);
     return null;
+  }
+}
+export async function getPostsByLocation({
+  latitude,
+  longitude,
+  distanceFilter,
+  pageParam,
+}: {
+  latitude: number;
+  longitude: number;
+  distanceFilter: number;
+  pageParam?: string;
+}) {
+  try {
+    // Fetch all posts from the database
+    const queries = [
+      Query.orderDesc('$createdAt'),
+      Query.limit(20),
+      pageParam ? Query.cursorAfter(pageParam) : null,  // 'null' needs to be removed later
+    ].filter(Boolean); // Filter out 'null' values from the array
+
+    const posts = await databases.listDocuments(
+      appWriteConfig.databaseId,
+      appWriteConfig.postCollectionId,
+      queries as string[]  // Cast the filtered result as 'string[]'
+    );
+
+    // Filter posts based on the distance
+    const filteredPosts = posts.documents.filter(post => {
+      const postCreator = post.creator;
+      if (postCreator && postCreator.latitude && postCreator.longitude) {
+        const distance = haversine(latitude, longitude, postCreator.latitude, postCreator.longitude);
+        return distance <= distanceFilter;  // Only posts within the specified range
+      }
+      return false;
+    });
+
+    return {
+      ...posts,
+      documents: filteredPosts,  // Replace documents with filtered posts
+    };
+  } catch (error) {
+    console.error('Error fetching posts by location:', error);
+    throw new Error('Failed to fetch posts by location');
   }
 }
