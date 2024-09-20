@@ -2,16 +2,32 @@ import { Button } from "@/components/ui/button";
 import Loader from "@/components/ui/shared/Loader";
 import PostStats from "@/components/ui/shared/PostStats";
 import { useUserContext } from "@/context/AuthContext";
-import { useGetPostById } from "@/lib/react-query/queriesAndMutations";
+import { useGetPostById, useDeletePost } from "@/lib/react-query/queriesAndMutations"; // Adjust path as needed
 import { multiFormatDateString } from "@/lib/utils";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 const PostDetails = () => {
   const { id } = useParams();
   const { data: post, isPending } = useGetPostById(id || "");
-  const {user} = useUserContext();
+  const { user } = useUserContext();
+  const navigate = useNavigate(); 
 
-  const handleDeletePost = () => {}
+  // Move the useDeletePost hook call to the component level
+  const { mutateAsync: deletePost, isPending: isDeleting } = useDeletePost();
+
+  // Handle delete post logic
+  const handleDeletePost = async (postId: string, imageId: string) => {
+    try {
+      // Call the deletePost mutation function
+      await deletePost({ postId, imageId });
+
+      console.log("Post deleted successfully");
+      navigate('/');
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+    }
+  };
+
   return (
     <div className="post_details-container">
       {isPending ? (
@@ -22,7 +38,10 @@ const PostDetails = () => {
 
           <div className="post_details-info">
             <div className="flex-between w-full">
-              <Link to={`/profile/${post?.creator.$id}`} className="flex items-center gap-3">
+              <Link
+                to={`/profile/${post?.creator.$id}`}
+                className="flex items-center gap-3"
+              >
                 <img
                   src={
                     post?.creator?.imageUrl ||
@@ -49,39 +68,65 @@ const PostDetails = () => {
               </Link>
 
               <div className="flex-center ">
-                  <Link to= {`/update-post/${post?.$id}`} 
-                  className={`${user.id !== post?.creator.$id && 'hidden'}`}>
-                  <img src="/assets/icons/edit.svg" width={24} height={24} alt="edit"/>
-                  </Link>
-
-                  <Button
-                  onClick={handleDeletePost}
-                  variant="ghost"
-                  className={`ghost_details-delete_btn ${user.id !== post?.creator.$id && 'hidden'}`}
-                  >
-                    <img src="/assets/icons/delete.svg"
-                    alt="delete"
+                <Link
+                  to={`/update-post/${post?.$id}`}
+                  className={`${user.id !== post?.creator.$id && "hidden"}`}
+                >
+                  <img
+                    src="/assets/icons/edit.svg"
                     width={24}
-                    height={24}/>
-                  </Button>
+                    height={24}
+                    alt="edit"
+                  />
+                </Link>
+
+                <Button
+  onClick={() => {
+    if (post?.$id && post?.ImageId) {  // Use `ImageId` here
+      handleDeletePost(post.$id, post.ImageId);  // Use `ImageId` here
+    } else {
+      console.error("Post ID or Image ID is missing");
+    }
+  }}
+  variant="ghost"
+  className={`ghost_details-delete_btn ${
+    user.id !== post?.creator.$id && "hidden"
+  }`}
+  disabled={isDeleting} // Disable button while deleting
+>
+  {isDeleting ? (
+    <span>Deleting...</span>
+  ) : (
+    <img
+      src="/assets/icons/delete.svg"
+      alt="delete"
+      width={24}
+      height={24}
+    />
+  )}
+</Button>
+
+
               </div>
             </div>
 
-            <hr className="border w-full border-dark-4/80"/>
+            <hr className="border w-full border-dark-4/80" />
             <div className="flex flex-col flex-1 w-full small-medium lg:base-regular">
-            <p>{post?.caption}</p>
-            <ul className="flex gap-1 mt-2">
-              {post?.tags.map((tag: string, index: string) => (
-                <li key={`${tag}${index}`} className="text-light-3 small-regular">
-                  #{tag}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="w-full">
-            <PostStats post={post} userId={user.id} />
-
-          </div>
+              <p>{post?.caption}</p>
+              <ul className="flex gap-1 mt-2">
+                {post?.tags.map((tag: string, index: string) => (
+                  <li
+                    key={`${tag}${index}`}
+                    className="text-light-3 small-regular"
+                  >
+                    #{tag}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="w-full">
+              <PostStats post={post} userId={user.id} />
+            </div>
           </div>
         </div>
       )}
