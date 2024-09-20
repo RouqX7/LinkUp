@@ -26,7 +26,7 @@ const GridPostList = ({posts,showUser =true, showStats =true}: GridPostListProps
                 src={post.creator.imageUrl}
                 alt="creator"
                 className='h-8 w-8 rounded-full'/>
-                <p className='line_clamp-1'>{post.creator.username}</p>
+                <p className='line_clamp-1'>{post.creator.name}</p>
               </div>
             )}
             {showStats && <PostStats  post={post} userId={user.id}/>}

@@ -11,22 +11,29 @@ import {
   createUserAccount,
   deletePost,
   deleteSavedPost,
+  followUser,
   getCurrentUser,
   getInfinitePosts,
   getPostById,
   getPostsByLocation,
   getRecentPosts,
+  getUserById,
+  getUserFollowers,
+  getUserFollowing,
+  getUserPosts,
   likePost,
   savePost,
   searchPosts,
   signInToAccount,
   signOutAccount,
+  unfollowUser,
   updatePost,
   updateUserLocation,
 } from "../appwrite/api";
 import { INewPost, INewUser, IUpdatePost } from "@/types";
 import { QUERY_KEYS } from "./queryKeys";
 import { get } from "http";
+import { appWriteConfig, databases } from "../appwrite/config";
 
 export const useCreateUserAccount = () => {
   return useMutation({
@@ -219,5 +226,54 @@ export const useGetPosts = (
     },
     enabled: !!latitude && !!longitude,
     initialPageParam: undefined, // Ensuring the initial page param is undefined
+  });
+};
+
+export const useGetUserById = (accountId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_USER_BY_ID, accountId],
+    queryFn: () => getUserById(accountId),
+    enabled: !!accountId, // Only fetch if accountId is provided
+  });
+};
+
+// Hook for fetching user's followers by accountId
+export const useGetUserFollowers = (accountId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_USER_FOLLOWERS, accountId],
+    queryFn: () => getUserFollowers(accountId),
+    enabled: !!accountId,
+  });
+};
+
+// Hook for fetching user's following list by accountId
+export const useGetUserFollowing = (accountId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_USER_FOLLOWING, accountId],
+    queryFn: () => getUserFollowing(accountId),
+    enabled: !!accountId,
+  });
+};
+
+export const useGetUserPosts = (accountId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_USER_POSTS, accountId],
+    queryFn: () => getUserPosts(accountId),
+    enabled: !!accountId, 
+  });
+};
+
+export const useFollowUser = () => {
+  return useMutation({
+    mutationFn: ({ followerId, followedId }: { followerId: string; followedId: string }) =>
+      followUser({ followerId, followedId }),  
+  });
+};
+
+// Unfollow User Mutation
+export const useUnfollowUser = () => {
+  return useMutation({
+    mutationFn: ({ followerId, followedId }: { followerId: string; followedId: string }) =>
+      unfollowUser({ followerId, followedId }),  
   });
 };

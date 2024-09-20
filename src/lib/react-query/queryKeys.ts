@@ -6,15 +6,17 @@ export enum QUERY_KEYS {
   GET_CURRENT_USER = "getCurrentUser",
   GET_USERS = "getUsers",
   GET_USER_BY_ID = "getUserById",
+  GET_USER_FOLLOWERS = "getUserFollowers",
+  GET_USER_FOLLOWING = "getUserFollowing",
+  GET_USER_POSTS = "getUserPosts",
 
   // POST KEYS
   GET_POSTS = "getPosts",
   GET_INFINITE_POSTS = "getInfinitePosts",
   GET_RECENT_POSTS = "getRecentPosts",
   GET_POST_BY_ID = "getPostById",
-  GET_USER_POSTS = "getUserPosts",
   GET_FILE_PREVIEW = "getFilePreview",
 
-  //  SEARCH KEYS
+  // SEARCH KEYS
   SEARCH_POSTS = "getSearchPosts",
 }

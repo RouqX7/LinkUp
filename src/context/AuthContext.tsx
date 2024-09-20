@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 export const INITIAL_USER = {
     id:'',
     name:'',
-    username:'',
     email:'',
     password:'',
     imageUrl:'',
@@ -38,7 +37,6 @@ const AuthProvider = ({children}: {children:React.ReactNode}) => {
                 setUser({
                     id:currentAccount.$id,
                     name: currentAccount.name,
-                    username: currentAccount.username,
                     email:currentAccount.email,
                     imageUrl: currentAccount.imageUrl,
                     bio: currentAccount.bio

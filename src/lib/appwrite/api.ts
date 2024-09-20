@@ -21,7 +21,6 @@ export async function createUserAccount(user: INewUser) {
       accountId: newAccount.$id,
       name: newAccount.name,
       email: newAccount.email,
-      username: user.username,
       imageUrl: avatarUrl,
       latitude: user.latitude,   
       longitude: user.longitude, 
@@ -40,7 +39,6 @@ export async function saveUserToDB(user: {
   email: string;
   name: string;
   imageUrl: URL;
-  username?: string;
   latitude?: number;  
   longitude?: number; 
 }) {
@@ -489,3 +487,152 @@ export async function getPostsByLocation({
     throw new Error('Failed to fetch posts by location');
   }
 }
+
+export async function getUserById(accountId: string) {
+  const user = await databases.getDocument(
+    appWriteConfig.databaseId,
+    appWriteConfig.userCollectionId,
+    accountId
+  );
+  return user;
+}
+
+export async function getUserFollowers(accountId: string) {
+  const userDoc = await databases.getDocument(
+    appWriteConfig.databaseId,
+    appWriteConfig.userCollectionId, // Fetch the user's document
+    accountId
+  );
+  
+  // Return the followers array or an empty array if not available
+  return userDoc.followers || [];
+}
+
+export async function getUserFollowing(accountId: string) {
+  const userDoc = await databases.getDocument(
+    appWriteConfig.databaseId,
+    appWriteConfig.userCollectionId, // Fetch the user's document
+    accountId
+  );
+  
+  // Return the following array or an empty array if not available
+  return userDoc.following || [];
+}
+
+export async function getUserPosts(accountId: string) {
+  const posts = await databases.listDocuments(
+    appWriteConfig.databaseId,
+    appWriteConfig.postCollectionId, // Posts collection
+    [Query.equal("creator", accountId)] // Get all posts created by this account
+  );
+  return posts;
+}
+
+export async function followUser({ followerId, followedId }: { followerId: string; followedId: string }) {
+  try {
+    // Fetch the current follower's document
+    const followerDoc = await databases.listDocuments(
+      appWriteConfig.databaseId,
+      appWriteConfig.userCollectionId,
+      [Query.equal('$id', followerId)]
+    );
+
+    if (followerDoc.documents.length === 0) {
+      throw new Error('Follower document not found');
+    }
+
+    const followerDocumentId = followerDoc.documents[0].$id;
+
+    // Fetch the followed user's document
+    const followedDoc = await databases.listDocuments(
+      appWriteConfig.databaseId,
+      appWriteConfig.userCollectionId,
+      [Query.equal('$id', followedId)]
+    );
+
+    if (followedDoc.documents.length === 0) {
+      throw new Error('Followed document not found');
+    }
+
+    const followedDocumentId = followedDoc.documents[0].$id;
+
+    // Update the follower's "following" list
+    const updatedFollowing = [...(followerDoc.documents[0].followedId || []), followedId];
+    await databases.updateDocument(
+      appWriteConfig.databaseId,
+      appWriteConfig.userCollectionId,
+      followerDocumentId,
+      { followedId: updatedFollowing }
+    );
+
+    // Update the followed user's "followers" list
+    const updatedFollowers = [...(followedDoc.documents[0].followerId || []), followerId];
+    await databases.updateDocument(
+      appWriteConfig.databaseId,
+      appWriteConfig.userCollectionId,
+      followedDocumentId,
+      { followerId: updatedFollowers }
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error following user:", error);
+    throw error;
+  }
+}
+
+
+
+export async function unfollowUser({ followerId, followedId }: { followerId: string; followedId: string }) {
+  try {
+    // Fetch the current follower's document
+    const followerDoc = await databases.listDocuments(
+      appWriteConfig.databaseId,
+      appWriteConfig.userCollectionId,
+      [Query.equal('$id', followerId)]
+    );
+
+    if (followerDoc.documents.length === 0) {
+      throw new Error('Follower document not found');
+    }
+
+    const followerDocumentId = followerDoc.documents[0].$id;
+
+    // Fetch the followed user's document
+    const followedDoc = await databases.listDocuments(
+      appWriteConfig.databaseId,
+      appWriteConfig.userCollectionId,
+      [Query.equal('$id', followedId)]
+    );
+
+    if (followedDoc.documents.length === 0) {
+      throw new Error('Followed document not found');
+    }
+
+    const followedDocumentId = followedDoc.documents[0].$id;
+
+    // Remove the followedId from the follower's "following" list
+    const updatedFollowing = followerDoc.documents[0].followedId.filter((id: string) => id !== followedId);
+    await databases.updateDocument(
+      appWriteConfig.databaseId,
+      appWriteConfig.userCollectionId,
+      followerDocumentId,
+      { followedId: updatedFollowing }
+    );
+
+    // Remove the followerId from the followed user's "followers" list
+    const updatedFollowers = followedDoc.documents[0].followerId.filter((id: string) => id !== followerId);
+    await databases.updateDocument(
+      appWriteConfig.databaseId,
+      appWriteConfig.userCollectionId,
+      followedDocumentId,
+      { followerId: updatedFollowers }
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error unfollowing user:", error);
+    throw error;
+  }
+}
+
